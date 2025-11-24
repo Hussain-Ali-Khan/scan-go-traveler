@@ -213,6 +213,24 @@ const Index = () => {
     });
   };
 
+  const escapeCsvValue = (value: string | undefined): string => {
+    if (!value) return '""';
+    
+    // Convert to string and handle special characters
+    const stringValue = String(value);
+    
+    // If value contains comma, quote, newline, or is a date-like string, wrap in quotes
+    if (stringValue.includes(',') || 
+        stringValue.includes('"') || 
+        stringValue.includes('\n') ||
+        /^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
+      // Escape existing quotes by doubling them
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    
+    return stringValue;
+  };
+
   const handleExport = () => {
     const headers = [
       "Name",
@@ -226,24 +244,27 @@ const Index = () => {
       "Arrival",
     ];
 
+    // Add BOM for UTF-8 encoding recognition by Excel
+    const BOM = "\uFEFF";
+    
     const csvData = [
-      headers.join(","),
+      headers.map(h => escapeCsvValue(h)).join(","),
       ...extractedData.map((row) =>
         [
-          row.name,
-          row.passportNumber,
-          row.dateOfBirth,
-          row.nationality,
-          row.expiryDate,
-          row.visaType || "",
-          row.flightNumber || "",
-          row.departure || "",
-          row.arrival || "",
+          escapeCsvValue(row.name),
+          escapeCsvValue(row.passportNumber),
+          escapeCsvValue(row.dateOfBirth),
+          escapeCsvValue(row.nationality),
+          escapeCsvValue(row.expiryDate),
+          escapeCsvValue(row.visaType || ""),
+          escapeCsvValue(row.flightNumber || ""),
+          escapeCsvValue(row.departure || ""),
+          escapeCsvValue(row.arrival || ""),
         ].join(",")
       ),
     ].join("\n");
 
-    const blob = new Blob([csvData], { type: "text/csv" });
+    const blob = new Blob([BOM + csvData], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
