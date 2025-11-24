@@ -61,46 +61,87 @@ const Index = () => {
     return filesByType.passport.length + filesByType.visa.length + filesByType.flight.length;
   };
 
+  const normalizeName = (name: string): string => {
+    if (!name) return '';
+    
+    // Handle flight ticket format: "LASTNAME?FIRSTNAME LASTNAME"
+    // Extract the part after the "?" if it exists
+    let cleanName = name;
+    if (name.includes('?')) {
+      const parts = name.split('?');
+      cleanName = parts[1] || parts[0]; // Use the part after "?" if it exists
+    }
+    
+    // Normalize: lowercase, remove extra spaces, remove special chars
+    return cleanName
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, '') // Remove non-letter characters except spaces
+      .replace(/\s+/g, ' ')      // Replace multiple spaces with single space
+      .trim();
+  };
+
+  const namesMatch = (name1: string, name2: string): boolean => {
+    const normalized1 = normalizeName(name1);
+    const normalized2 = normalizeName(name2);
+    
+    // Exact match after normalization
+    if (normalized1 === normalized2) return true;
+    
+    // Check if one contains the other (handles middle names, etc.)
+    const words1 = normalized1.split(' ');
+    const words2 = normalized2.split(' ');
+    
+    // Check if major name components overlap
+    const commonWords = words1.filter(word => 
+      words2.some(w => w === word || word.includes(w) || w.includes(word))
+    );
+    
+    // If at least 2 name components match, consider it the same person
+    return commonWords.length >= 2;
+  };
+
   const consolidateData = (dataArray: ExtractedData[]): ExtractedData[] => {
-    const passengerMap = new Map<string, ExtractedData>();
+    const passengers: ExtractedData[] = [];
     
     dataArray.forEach(item => {
-      // Use passport number as key, fallback to name if passport number is empty
-      const key = item.passportNumber?.trim() || item.name?.trim() || `unknown-${Math.random()}`;
+      // Try to find existing passenger by passport number (most reliable)
+      let existingIndex = -1;
       
-      if (passengerMap.has(key)) {
-        // Merge with existing data - prefer non-empty values
-        const existing = passengerMap.get(key)!;
-        passengerMap.set(key, {
-          // Keep core identity data (prefer passport data which comes first usually)
-          name: existing.name || item.name,
+      if (item.passportNumber?.trim()) {
+        existingIndex = passengers.findIndex(p => 
+          p.passportNumber?.trim() === item.passportNumber?.trim()
+        );
+      }
+      
+      // If no passport match, try name matching
+      if (existingIndex === -1 && item.name?.trim()) {
+        existingIndex = passengers.findIndex(p => 
+          p.name && namesMatch(p.name, item.name)
+        );
+      }
+      
+      if (existingIndex !== -1) {
+        // Merge with existing passenger
+        const existing = passengers[existingIndex];
+        passengers[existingIndex] = {
+          // Prefer passport name over flight ticket name (cleaner format)
+          name: existing.passportNumber ? existing.name : (item.passportNumber ? item.name : existing.name),
           passportNumber: existing.passportNumber || item.passportNumber,
           dateOfBirth: existing.dateOfBirth || item.dateOfBirth,
           nationality: existing.nationality || item.nationality,
           expiryDate: existing.expiryDate || item.expiryDate,
-          // Merge optional fields from different document types
           visaType: item.visaType || existing.visaType,
           flightNumber: item.flightNumber || existing.flightNumber,
           departure: item.departure || existing.departure,
           arrival: item.arrival || existing.arrival,
-        });
+        };
       } else {
-        // First occurrence of this passenger
-        passengerMap.set(key, {
-          name: item.name,
-          passportNumber: item.passportNumber,
-          dateOfBirth: item.dateOfBirth,
-          nationality: item.nationality,
-          expiryDate: item.expiryDate,
-          visaType: item.visaType,
-          flightNumber: item.flightNumber,
-          departure: item.departure,
-          arrival: item.arrival,
-        });
+        // New passenger
+        passengers.push({ ...item });
       }
     });
     
-    return Array.from(passengerMap.values());
+    return passengers;
   };
 
   const handleProcess = async () => {
