@@ -6,8 +6,6 @@ import { ExtractedDataTable, ExtractedData } from "@/components/ExtractedDataTab
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import * as pdfjsLib from "pdfjs-dist";
-import "pdfjs-dist/build/pdf.worker.mjs";
 
 
 interface FilesByType {
@@ -27,13 +25,28 @@ const Index = () => {
   const { toast } = useToast();
 
   const handleFilesSelected = (type: DocumentType, newFiles: File[]) => {
+    // Validate file types - only accept images
+    const validFiles = newFiles.filter(file => {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not an image. Please upload JPEG or PNG files only.`,
+          variant: "destructive",
+        });
+      }
+      return isImage;
+    });
+
+    if (validFiles.length === 0) return;
+
     setFilesByType((prev) => ({
       ...prev,
-      [type]: [...prev[type], ...newFiles],
+      [type]: [...prev[type], ...validFiles],
     }));
     toast({
       title: "Documents uploaded",
-      description: `${newFiles.length} ${type} document(s) added`,
+      description: `${validFiles.length} ${type} document(s) added`,
     });
   };
 
@@ -102,35 +115,7 @@ const Index = () => {
     }
   };
 
-  const pdfToImage = async (file: File): Promise<string> => {
-    // Set worker from jsdelivr CDN - most reliable for Vite
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 
-      "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
-    
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1);
-    
-    const viewport = page.getViewport({ scale: 2.0 });
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d")!;
-    
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    
-    await page.render({
-      canvasContext: context,
-      viewport: viewport,
-    }).promise;
-    
-    return canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
-  };
-
-  const fileToBase64 = async (file: File): Promise<string> => {
-    if (file.type === "application/pdf") {
-      return await pdfToImage(file);
-    }
-    
+  const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);

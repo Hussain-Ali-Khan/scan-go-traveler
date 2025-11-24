@@ -40,13 +40,13 @@ export const DocumentUpload = ({ onFilesSelected, isProcessing, documentType }: 
       e.preventDefault();
       const files = Array.from(e.dataTransfer.files);
       const validFiles = files.filter((file) => 
-        file.type.startsWith("image/") || file.type === "application/pdf"
+        file.type.startsWith("image/")
       );
 
       if (validFiles.length === 0) {
         toast({
           title: "Invalid file type",
-          description: "Please upload images (JPG, PNG, WEBP) or PDF files",
+          description: "Please upload images (JPG, PNG, WEBP) only",
           variant: "destructive",
         });
         return;
@@ -76,7 +76,7 @@ export const DocumentUpload = ({ onFilesSelected, isProcessing, documentType }: 
       <input
         type="file"
         multiple
-        accept="image/*,application/pdf"
+        accept="image/*"
         onChange={handleFileInput}
         className="hidden"
         id={inputId}
@@ -95,7 +95,7 @@ export const DocumentUpload = ({ onFilesSelected, isProcessing, documentType }: 
               {config.description}
             </p>
             <p className="text-xs text-muted mt-1">
-              JPG, PNG, WEBP, PDF
+              JPG, PNG, WEBP
             </p>
           </div>
         </div>
