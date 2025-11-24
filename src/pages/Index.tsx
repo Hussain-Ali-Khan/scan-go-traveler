@@ -214,16 +214,15 @@ const Index = () => {
   };
 
   const escapeCsvValue = (value: string | undefined): string => {
-    if (!value) return '""';
+    if (!value) return '';
     
     // Convert to string and handle special characters
     const stringValue = String(value);
     
-    // If value contains comma, quote, newline, or is a date-like string, wrap in quotes
+    // Only quote if contains comma, quote, or newline (not dates)
     if (stringValue.includes(',') || 
         stringValue.includes('"') || 
-        stringValue.includes('\n') ||
-        /^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
+        stringValue.includes('\n')) {
       // Escape existing quotes by doubling them
       return `"${stringValue.replace(/"/g, '""')}"`;
     }
