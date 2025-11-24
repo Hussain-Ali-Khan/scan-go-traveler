@@ -20,7 +20,6 @@ export interface ExtractedData {
   flightNumber?: string;
   departure?: string;
   arrival?: string;
-  documentType: string;
 }
 
 interface ExtractedDataTableProps {
@@ -64,7 +63,6 @@ export const ExtractedDataTable = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Document Type</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Passport Number</TableHead>
                 <TableHead>Date of Birth</TableHead>
@@ -79,8 +77,7 @@ export const ExtractedDataTable = ({
             <TableBody>
               {data.map((row, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{row.documentType}</TableCell>
-                  <TableCell>{row.name}</TableCell>
+                  <TableCell className="font-medium">{row.name}</TableCell>
                   <TableCell>{row.passportNumber}</TableCell>
                   <TableCell>{row.dateOfBirth}</TableCell>
                   <TableCell>{row.nationality}</TableCell>

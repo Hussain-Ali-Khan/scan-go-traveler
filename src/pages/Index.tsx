@@ -61,6 +61,48 @@ const Index = () => {
     return filesByType.passport.length + filesByType.visa.length + filesByType.flight.length;
   };
 
+  const consolidateData = (dataArray: ExtractedData[]): ExtractedData[] => {
+    const passengerMap = new Map<string, ExtractedData>();
+    
+    dataArray.forEach(item => {
+      // Use passport number as key, fallback to name if passport number is empty
+      const key = item.passportNumber?.trim() || item.name?.trim() || `unknown-${Math.random()}`;
+      
+      if (passengerMap.has(key)) {
+        // Merge with existing data - prefer non-empty values
+        const existing = passengerMap.get(key)!;
+        passengerMap.set(key, {
+          // Keep core identity data (prefer passport data which comes first usually)
+          name: existing.name || item.name,
+          passportNumber: existing.passportNumber || item.passportNumber,
+          dateOfBirth: existing.dateOfBirth || item.dateOfBirth,
+          nationality: existing.nationality || item.nationality,
+          expiryDate: existing.expiryDate || item.expiryDate,
+          // Merge optional fields from different document types
+          visaType: item.visaType || existing.visaType,
+          flightNumber: item.flightNumber || existing.flightNumber,
+          departure: item.departure || existing.departure,
+          arrival: item.arrival || existing.arrival,
+        });
+      } else {
+        // First occurrence of this passenger
+        passengerMap.set(key, {
+          name: item.name,
+          passportNumber: item.passportNumber,
+          dateOfBirth: item.dateOfBirth,
+          nationality: item.nationality,
+          expiryDate: item.expiryDate,
+          visaType: item.visaType,
+          flightNumber: item.flightNumber,
+          departure: item.departure,
+          arrival: item.arrival,
+        });
+      }
+    });
+    
+    return Array.from(passengerMap.values());
+  };
+
   const handleProcess = async () => {
     const totalFiles = getTotalFiles();
     
@@ -98,10 +140,13 @@ const Index = () => {
         }
       }
 
-      setExtractedData(newData);
+      // Consolidate data by passenger
+      const consolidatedData = consolidateData(newData);
+      
+      setExtractedData(consolidatedData);
       toast({
         title: "Processing complete",
-        description: `Extracted data from ${newData.length} document(s)`,
+        description: `Extracted data for ${consolidatedData.length} passenger(s)`,
       });
     } catch (error: any) {
       console.error("Processing error:", error);
@@ -129,7 +174,6 @@ const Index = () => {
 
   const handleExport = () => {
     const headers = [
-      "Document Type",
       "Name",
       "Passport Number",
       "Date of Birth",
@@ -145,7 +189,6 @@ const Index = () => {
       headers.join(","),
       ...extractedData.map((row) =>
         [
-          row.documentType,
           row.name,
           row.passportNumber,
           row.dateOfBirth,
