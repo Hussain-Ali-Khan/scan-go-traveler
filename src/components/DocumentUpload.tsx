@@ -1,14 +1,39 @@
 import { useCallback } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Plane, FileText, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+export type DocumentType = "passport" | "visa" | "flight";
 
 interface DocumentUploadProps {
   onFilesSelected: (files: File[]) => void;
   isProcessing: boolean;
+  documentType: DocumentType;
 }
 
-export const DocumentUpload = ({ onFilesSelected, isProcessing }: DocumentUploadProps) => {
+const documentConfig = {
+  passport: {
+    icon: FileText,
+    title: "Passports",
+    description: "Upload passport document images",
+    color: "text-primary",
+  },
+  visa: {
+    icon: CreditCard,
+    title: "Visas",
+    description: "Upload visa document images",
+    color: "text-chart-2",
+  },
+  flight: {
+    icon: Plane,
+    title: "Flight Tickets",
+    description: "Upload flight ticket images",
+    color: "text-chart-3",
+  },
+};
+
+export const DocumentUpload = ({ onFilesSelected, isProcessing, documentType }: DocumentUploadProps) => {
   const { toast } = useToast();
+  const config = documentConfig[documentType];
 
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -39,11 +64,14 @@ export const DocumentUpload = ({ onFilesSelected, isProcessing }: DocumentUpload
     }
   };
 
+  const IconComponent = config.icon;
+  const inputId = `file-upload-${documentType}`;
+
   return (
     <div
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors cursor-pointer bg-card"
+      className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer bg-card"
     >
       <input
         type="file"
@@ -51,23 +79,23 @@ export const DocumentUpload = ({ onFilesSelected, isProcessing }: DocumentUpload
         accept="image/*,application/pdf"
         onChange={handleFileInput}
         className="hidden"
-        id="file-upload"
+        id={inputId}
         disabled={isProcessing}
       />
-      <label htmlFor="file-upload" className="cursor-pointer">
-        <div className="flex flex-col items-center gap-4">
-          <div className="rounded-full bg-primary/10 p-6">
-            <Upload className="h-12 w-12 text-primary" />
+      <label htmlFor={inputId} className="cursor-pointer">
+        <div className="flex flex-col items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-4">
+            <IconComponent className={`h-8 w-8 ${config.color}`} />
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              {isProcessing ? "Processing..." : "Upload Documents"}
+            <h3 className="text-lg font-semibold text-foreground mb-1">
+              {isProcessing ? "Processing..." : config.title}
             </h3>
-            <p className="text-muted-foreground">
-              Drag and drop or click to select passports, visas, and flight tickets
+            <p className="text-sm text-muted-foreground">
+              {config.description}
             </p>
-            <p className="text-sm text-muted mt-2">
-              Supports: JPG, PNG, WEBP, PDF
+            <p className="text-xs text-muted mt-1">
+              JPG, PNG, WEBP, PDF
             </p>
           </div>
         </div>
