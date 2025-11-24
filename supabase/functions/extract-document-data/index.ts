@@ -27,38 +27,92 @@ Deno.serve(async (req) => {
 
     if (lowerFileName.includes("passport")) {
       documentType = "Passport";
-      prompt = `Extract the following information from this passport document:
-- Full name (as shown on passport)
-- Passport number
-- Date of birth (format: YYYY-MM-DD)
-- Nationality
-- Expiry date (format: YYYY-MM-DD)
+      prompt = `You are an expert OCR system specializing in passport document extraction. Analyze this passport image carefully.
 
-Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate. No additional text.`;
+CRITICAL INSTRUCTIONS:
+- Look for the Machine Readable Zone (MRZ) at the bottom - it's the most reliable source
+- Cross-reference printed text with MRZ data for accuracy
+- Pay attention to document layout - name is usually at top, dates and numbers follow standard patterns
+
+EXTRACT THE FOLLOWING:
+1. Full name: Extract surname and given names exactly as printed (not from MRZ format)
+2. Passport number: Usually alphanumeric, 6-9 characters, found in top right or near photo
+3. Date of birth: Format as YYYY-MM-DD (convert from any format like DD/MM/YYYY or DD MMM YYYY)
+4. Nationality: The country that issued the passport (look for "Nationality" field or country code)
+5. Expiry date: Format as YYYY-MM-DD (look for "Date of expiry" or similar)
+
+HANDLING UNCLEAR DATA:
+- If text is blurry or unclear, use your best interpretation
+- If a field is completely unreadable, use empty string ""
+- Double-check dates are valid (month 01-12, day 01-31)
+- Ensure date formats are strictly YYYY-MM-DD
+
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate. No additional text, explanations, or markdown.`;
     } else if (lowerFileName.includes("visa")) {
       documentType = "Visa";
-      prompt = `Extract the following information from this visa document:
-- Full name
-- Passport number (if visible)
-- Date of birth (format: YYYY-MM-DD)
-- Nationality
-- Visa expiry date (format: YYYY-MM-DD)
-- Visa type
+      prompt = `You are an expert OCR system specializing in visa document extraction. Analyze this visa document carefully.
 
-Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType. No additional text.`;
+CRITICAL INSTRUCTIONS:
+- Visas have various formats - look for official stamps, stickers, or printed documents
+- Key information is usually in the main body of the visa sticker/stamp
+- Some information may reference an attached passport
+
+EXTRACT THE FOLLOWING:
+1. Full name: Extract exactly as printed on the visa
+2. Passport number: May be printed on visa itself or may need to check attached passport (if visible)
+3. Date of birth: Format as YYYY-MM-DD (convert from any date format)
+4. Nationality: Country of the passport holder
+5. Visa expiry date: Format as YYYY-MM-DD (look for "valid until", "expiry", or "valid to")
+6. Visa type: Category or type (e.g., "Tourist", "B1/B2", "Work", "Student", "Transit")
+
+HANDLING UNCLEAR DATA:
+- If passport number is not on visa itself, use empty string ""
+- For visa type, look for codes like "B1", "B2", "H1B", or words like "Tourist", "Business"
+- If text is unclear, make your best interpretation
+- Ensure all dates are formatted as YYYY-MM-DD
+
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType. No additional text, explanations, or markdown.`;
     } else if (lowerFileName.includes("flight") || lowerFileName.includes("ticket")) {
       documentType = "Flight Ticket";
-      prompt = `Extract the following information from this flight ticket:
-- Passenger name
-- Flight number
-- Departure city/airport
-- Arrival city/airport
-- Departure date (format: YYYY-MM-DD)
+      prompt = `You are an expert OCR system specializing in flight ticket and boarding pass extraction. Analyze this document carefully.
 
-Return ONLY a JSON object with these exact keys: name, flightNumber, departure, arrival, dateOfBirth (use departure date). No additional text.`;
+CRITICAL INSTRUCTIONS:
+- Flight tickets have passenger name, flight details, and travel dates
+- Look for airline logos and flight number patterns (e.g., AA123, BA456)
+- Departure and arrival information is usually prominent
+
+EXTRACT THE FOLLOWING:
+1. Passenger name: Full name as printed on ticket (usually in format: LASTNAME/FIRSTNAME)
+2. Flight number: Airline code + number (e.g., "AA 1234", "BA 456", "DL 789")
+3. Departure: City name or airport code of origin (e.g., "New York JFK", "London Heathrow", "LAX")
+4. Arrival: City name or airport code of destination (e.g., "Paris CDG", "Tokyo Narita", "SFO")
+5. Departure date: Format as YYYY-MM-DD (look for flight date, departure date)
+
+HANDLING UNCLEAR DATA:
+- If passenger name has "/" separator, keep it as is
+- Include both city name and airport code if both are visible
+- For date, look for departure date specifically (not booking date or arrival date)
+- If text is unclear, make your best interpretation
+
+Return ONLY a JSON object with these exact keys: name, flightNumber, departure, arrival, dateOfBirth (use departure date here). No additional text, explanations, or markdown.`;
     } else {
-      prompt = `Identify what type of document this is (passport, visa, or flight ticket) and extract all relevant information.
-Return ONLY a JSON object with available data using keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType, flightNumber, departure, arrival. No additional text.`;
+      prompt = `You are an expert OCR system. Analyze this document and identify what type it is.
+
+STEPS:
+1. Determine if this is a PASSPORT, VISA, or FLIGHT TICKET
+2. Extract all relevant information based on document type
+3. Use the appropriate field names for the identified document type
+
+PASSPORT fields: name, passportNumber, dateOfBirth, nationality, expiryDate
+VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType
+FLIGHT TICKET fields: name, flightNumber, departure, arrival, dateOfBirth (use departure date)
+
+FORMATTING:
+- All dates must be in YYYY-MM-DD format
+- If a field is not found or unclear, use empty string ""
+- Be as accurate as possible with OCR
+
+Return ONLY a JSON object with available data. No additional text, explanations, or markdown.`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
