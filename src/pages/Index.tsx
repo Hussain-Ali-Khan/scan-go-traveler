@@ -6,6 +6,8 @@ import { ExtractedDataTable, ExtractedData } from "@/components/ExtractedDataTab
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import * as pdfjsLib from "pdfjs-dist";
+import "pdfjs-dist/build/pdf.worker.mjs";
 
 
 interface FilesByType {
@@ -66,14 +68,12 @@ const Index = () => {
       for (const [type, files] of Object.entries(filesByType)) {
         for (const file of files) {
           const base64 = await fileToBase64(file);
-          const isPdf = file.type === "application/pdf";
           
           const { data, error } = await supabase.functions.invoke("extract-document-data", {
             body: { 
               image: base64, 
               fileName: `${type}-${file.name}`,
-              documentType: type,
-              isPdf: isPdf
+              documentType: type
             },
           });
 
@@ -102,7 +102,35 @@ const Index = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  const pdfToImage = async (file: File): Promise<string> => {
+    // Set worker from jsdelivr CDN - most reliable for Vite
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d")!;
+    
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise;
+    
+    return canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
+  };
+
+  const fileToBase64 = async (file: File): Promise<string> => {
+    if (file.type === "application/pdf") {
+      return await pdfToImage(file);
+    }
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
