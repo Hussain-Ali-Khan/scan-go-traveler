@@ -1,31 +1,34 @@
 import { FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DocumentType } from "./DocumentUpload";
 
 interface DocumentPreviewProps {
   files: File[];
   onRemove: (index: number) => void;
+  documentType: DocumentType;
+  title: string;
 }
 
-export const DocumentPreview = ({ files, onRemove }: DocumentPreviewProps) => {
+export const DocumentPreview = ({ files, onRemove, documentType, title }: DocumentPreviewProps) => {
   if (files.length === 0) return null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Uploaded Documents</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-3">
+      <h4 className="text-sm font-medium text-foreground">{title} ({files.length})</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {files.map((file, index) => (
-          <Card key={index} className="relative overflow-hidden p-4">
-            <div className="flex items-start gap-3">
+          <Card key={index} className="relative overflow-hidden p-3">
+            <div className="flex items-start gap-2">
               {file.type.startsWith("image/") ? (
                 <img
                   src={URL.createObjectURL(file)}
                   alt={file.name}
-                  className="w-16 h-16 object-cover rounded"
+                  className="w-12 h-12 object-cover rounded"
                 />
               ) : (
-                <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
+                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
