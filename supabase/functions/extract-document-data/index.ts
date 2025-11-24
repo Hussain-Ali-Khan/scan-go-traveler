@@ -9,20 +9,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { image, fileName, isPdf } = await req.json();
+    const { image, fileName } = await req.json();
 
     if (!image) {
       throw new Error("No image data provided");
-    }
-    
-    let imageData = image;
-    
-    // If it's a PDF, we'll send it directly - Gemini can handle PDFs
-    // Just need to adjust the data URL format
-    if (isPdf) {
-      imageData = `data:application/pdf;base64,${image}`;
-    } else {
-      imageData = `data:image/jpeg;base64,${image}`;
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -140,7 +130,7 @@ Return ONLY a JSON object with available data. No additional text, explanations,
               { type: "text", text: prompt },
               {
                 type: "image_url",
-                image_url: { url: imageData },
+                image_url: { url: `data:image/jpeg;base64,${image}` },
               },
             ],
           },
