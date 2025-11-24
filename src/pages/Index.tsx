@@ -6,6 +6,7 @@ import { ExtractedDataTable, ExtractedData } from "@/components/ExtractedDataTab
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import * as pdfjsLib from "pdfjs-dist";
 
 interface FilesByType {
   passport: File[];
@@ -99,7 +100,34 @@ const Index = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  const pdfToImage = async (file: File): Promise<string> => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    await page.render({
+      canvasContext: context!,
+      viewport: viewport,
+      canvas: canvas,
+    }).promise;
+    
+    return canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
+  };
+
+  const fileToBase64 = async (file: File): Promise<string> => {
+    if (file.type === "application/pdf") {
+      return await pdfToImage(file);
+    }
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
