@@ -259,6 +259,16 @@ const Index = () => {
     return stringValue;
   };
 
+  // Force Excel to treat value as text string (prevents auto date conversion)
+  const escapeCsvDateValue = (value: string | undefined): string => {
+    if (!value) return '';
+    
+    // Use ="value" format to force Excel to treat as text literal
+    // This prevents Excel from auto-converting and misinterpreting dates
+    const stringValue = String(value).replace(/"/g, '""');
+    return `="${stringValue}"`;
+  };
+
   const handleExport = () => {
     const headers = [
       "Name",
@@ -281,9 +291,9 @@ const Index = () => {
         [
           escapeCsvValue(row.name),
           escapeCsvValue(row.passportNumber),
-          escapeCsvValue(formatDate(row.dateOfBirth)),
+          escapeCsvDateValue(formatDate(row.dateOfBirth)),
           escapeCsvValue(row.nationality),
-          escapeCsvValue(formatDate(row.expiryDate)),
+          escapeCsvDateValue(formatDate(row.expiryDate)),
           escapeCsvValue(row.visaType || ""),
           escapeCsvValue(row.flightNumber || ""),
           escapeCsvValue(row.departure || ""),
