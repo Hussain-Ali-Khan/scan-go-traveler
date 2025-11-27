@@ -125,24 +125,6 @@ npm run build
 
 The built files will be in the `dist/` directory.
 
-## Deployment
-
-This project is built with Lovable and can be easily deployed:
-
-1. Click the **Publish** button in the Lovable editor (top right on desktop, bottom right on mobile)
-2. Your app will be deployed to a Lovable staging subdomain
-3. Optional: Connect a custom domain in Project > Settings > Domains
-
-For more deployment options, visit: https://docs.lovable.dev/
-
-## Environment Variables
-
-The following environment variables are automatically configured by Lovable Cloud:
-
-- `VITE_SUPABASE_URL` - Backend API URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` - Public API key
-- `VITE_SUPABASE_PROJECT_ID` - Project identifier
-- `LOVABLE_API_KEY` - AI Gateway access key (backend only)
 
 ## Usage Tips
 
