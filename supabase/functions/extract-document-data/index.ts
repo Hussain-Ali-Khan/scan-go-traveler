@@ -39,7 +39,8 @@ EXTRACT THE FOLLOWING:
 2. Passport number: Usually alphanumeric, 6-9 characters, found in top right or near photo
 3. Date of birth: Format EXACTLY as DD-MMM-YYYY (e.g., 15-Mar-1990) - use 3-letter month abbreviations
 4. Nationality: The country that issued the passport (look for "Nationality" field or country code)
-5. Expiry date: Format EXACTLY as DD-MMM-YYYY (e.g., 20-Dec-2030) - use 3-letter month abbreviations
+5. Issue date: Format EXACTLY as DD-MMM-YYYY (e.g., 10-Jan-2020) - the date the passport was issued
+6. Expiry date: Format EXACTLY as DD-MMM-YYYY (e.g., 20-Dec-2030) - use 3-letter month abbreviations
 
 HANDLING UNCLEAR DATA:
 - If text is blurry or unclear, use your best interpretation
@@ -47,7 +48,7 @@ HANDLING UNCLEAR DATA:
 - Double-check dates are valid (day 01-31, valid month name, year 4 digits)
 - DATE FORMAT MUST BE DD-MMM-YYYY with hyphens (e.g., 15-Mar-1990, 20-Dec-2030)
 
-Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate. No additional text, explanations, or markdown.`;
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate. No additional text, explanations, or markdown.`;
     } else if (lowerFileName.includes("visa")) {
       documentType = "Visa";
       prompt = `You are an expert OCR system specializing in visa document extraction. Analyze this visa document carefully.
@@ -104,7 +105,7 @@ STEPS:
 2. Extract all relevant information based on document type
 3. Use the appropriate field names for the identified document type
 
-PASSPORT fields: name, passportNumber, dateOfBirth, nationality, expiryDate
+PASSPORT fields: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate
 VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType
 FLIGHT TICKET fields: name, flightNumber, departure, arrival, dateOfBirth (use departure date)
 
@@ -173,6 +174,7 @@ Return ONLY a JSON object with available data. No additional text, explanations,
       passportNumber: extractedData.passportNumber || "",
       dateOfBirth: extractedData.dateOfBirth || "",
       nationality: extractedData.nationality || "",
+      passportIssueDate: extractedData.passportIssueDate || "",
       expiryDate: extractedData.expiryDate || "",
       visaType: extractedData.visaType || "",
       flightNumber: extractedData.flightNumber || "",
