@@ -37,15 +37,15 @@ CRITICAL INSTRUCTIONS:
 EXTRACT THE FOLLOWING:
 1. Full name: Extract surname and given names exactly as printed (not from MRZ format)
 2. Passport number: Usually alphanumeric, 6-9 characters, found in top right or near photo
-3. Date of birth: Format EXACTLY as DD/MM/YYYY (e.g., 15/03/1990) - convert from any format
+3. Date of birth: Format EXACTLY as DD-MMM-YYYY (e.g., 15-Mar-1990) - use 3-letter month abbreviations
 4. Nationality: The country that issued the passport (look for "Nationality" field or country code)
-5. Expiry date: Format EXACTLY as DD/MM/YYYY (e.g., 20/12/2030) - convert from any format
+5. Expiry date: Format EXACTLY as DD-MMM-YYYY (e.g., 20-Dec-2030) - use 3-letter month abbreviations
 
 HANDLING UNCLEAR DATA:
 - If text is blurry or unclear, use your best interpretation
 - If a field is completely unreadable, use empty string ""
-- Double-check dates are valid (day 01-31, month 01-12, year 4 digits)
-- DATE FORMAT MUST BE DD/MM/YYYY with forward slashes
+- Double-check dates are valid (day 01-31, valid month name, year 4 digits)
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens (e.g., 15-Mar-1990, 20-Dec-2030)
 
 Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate. No additional text, explanations, or markdown.`;
     } else if (lowerFileName.includes("visa")) {
@@ -60,16 +60,16 @@ CRITICAL INSTRUCTIONS:
 EXTRACT THE FOLLOWING:
 1. Full name: Extract exactly as printed on the visa
 2. Passport number: May be printed on visa itself or may need to check attached passport (if visible)
-3. Date of birth: Format EXACTLY as DD/MM/YYYY (e.g., 15/03/1990) - convert from any format
+3. Date of birth: Format EXACTLY as DD-MMM-YYYY (e.g., 15-Mar-1990) - use 3-letter month abbreviations
 4. Nationality: Country of the passport holder
-5. Visa expiry date: Format EXACTLY as DD/MM/YYYY (e.g., 20/12/2030) - convert from any format
+5. Visa expiry date: Format EXACTLY as DD-MMM-YYYY (e.g., 20-Dec-2030) - use 3-letter month abbreviations
 6. Visa type: Category or type (e.g., "Tourist", "B1/B2", "Work", "Student", "Transit")
 
 HANDLING UNCLEAR DATA:
 - If passport number is not on visa itself, use empty string ""
 - For visa type, look for codes like "B1", "B2", "H1B", or words like "Tourist", "Business"
 - If text is unclear, make your best interpretation
-- DATE FORMAT MUST BE DD/MM/YYYY with forward slashes
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens (e.g., 15-Mar-1990, 20-Dec-2030)
 
 Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType. No additional text, explanations, or markdown.`;
     } else if (lowerFileName.includes("flight") || lowerFileName.includes("ticket")) {
@@ -86,14 +86,14 @@ EXTRACT THE FOLLOWING:
 2. Flight number: Airline code + number (e.g., "AA 1234", "BA 456", "DL 789")
 3. Departure: City name or airport code of origin (e.g., "New York JFK", "London Heathrow", "LAX")
 4. Arrival: City name or airport code of destination (e.g., "Paris CDG", "Tokyo Narita", "SFO")
-5. Departure date: Format EXACTLY as DD/MM/YYYY (e.g., 25/12/2024) - convert from any format
+5. Departure date: Format EXACTLY as DD-MMM-YYYY (e.g., 25-Dec-2024) - use 3-letter month abbreviations
 
 HANDLING UNCLEAR DATA:
 - If passenger name has "/" separator, keep it as is
 - Include both city name and airport code if both are visible
 - For date, look for departure date specifically (not booking date or arrival date)
 - If text is unclear, make your best interpretation
-- DATE FORMAT MUST BE DD/MM/YYYY with forward slashes
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens (e.g., 25-Dec-2024)
 
 Return ONLY a JSON object with these exact keys: name, flightNumber, departure, arrival, dateOfBirth (use departure date here). No additional text, explanations, or markdown.`;
     } else {
@@ -109,7 +109,7 @@ VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaTyp
 FLIGHT TICKET fields: name, flightNumber, departure, arrival, dateOfBirth (use departure date)
 
 FORMATTING:
-- All dates MUST be in DD/MM/YYYY format with forward slashes (e.g., 15/03/1990)
+- All dates MUST be in DD-MMM-YYYY format with hyphens (e.g., 15-Mar-1990, 20-Dec-2030)
 - If a field is not found or unclear, use empty string ""
 - Be as accurate as possible with OCR
 
