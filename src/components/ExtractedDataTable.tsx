@@ -10,6 +10,34 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 
+const formatDate = (dateValue: string | undefined): string => {
+  if (!dateValue) return '';
+  
+  // If it's already in YYYY-MM-DD format, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue;
+  }
+  
+  // Try to parse as a date
+  try {
+    const date = new Date(dateValue);
+    
+    // Check if it's a valid date
+    if (!isNaN(date.getTime())) {
+      // Format as YYYY-MM-DD
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    console.error('Date parsing error:', e);
+  }
+  
+  // If all parsing fails, return the original value
+  return dateValue;
+};
+
 export interface ExtractedData {
   name: string;
   passportNumber: string;
@@ -79,9 +107,9 @@ export const ExtractedDataTable = ({
                 <TableRow key={index}>
                   <TableCell className="font-medium">{row.name}</TableCell>
                   <TableCell>{row.passportNumber}</TableCell>
-                  <TableCell>{row.dateOfBirth}</TableCell>
+                  <TableCell>{formatDate(row.dateOfBirth)}</TableCell>
                   <TableCell>{row.nationality}</TableCell>
-                  <TableCell>{row.expiryDate}</TableCell>
+                  <TableCell>{formatDate(row.expiryDate)}</TableCell>
                   <TableCell>{row.visaType || "-"}</TableCell>
                   <TableCell>{row.flightNumber || "-"}</TableCell>
                   <TableCell>{row.departure || "-"}</TableCell>

@@ -213,6 +213,34 @@ const Index = () => {
     });
   };
 
+  const formatDate = (dateValue: string | undefined): string => {
+    if (!dateValue) return '';
+    
+    // If it's already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    
+    // Try to parse as a date
+    try {
+      const date = new Date(dateValue);
+      
+      // Check if it's a valid date
+      if (!isNaN(date.getTime())) {
+        // Format as YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch (e) {
+      console.error('Date parsing error:', e);
+    }
+    
+    // If all parsing fails, return the original value
+    return dateValue;
+  };
+
   const escapeCsvValue = (value: string | undefined): string => {
     if (!value) return '';
     
@@ -252,9 +280,9 @@ const Index = () => {
         [
           escapeCsvValue(row.name),
           escapeCsvValue(row.passportNumber),
-          escapeCsvValue(row.dateOfBirth),
+          escapeCsvValue(formatDate(row.dateOfBirth)),
           escapeCsvValue(row.nationality),
-          escapeCsvValue(row.expiryDate),
+          escapeCsvValue(formatDate(row.expiryDate)),
           escapeCsvValue(row.visaType || ""),
           escapeCsvValue(row.flightNumber || ""),
           escapeCsvValue(row.departure || ""),
