@@ -152,20 +152,4 @@ The following environment variables are automatically configured by Lovable Clou
 - **Data Consolidation**: Documents with matching passport numbers are automatically merged
 - **Export**: Click "Export to CSV" to download all extracted data
 
-## Contributing
 
-This project was built with [Lovable](https://lovable.dev/), an AI-powered web application builder.
-
-## License
-
-This project is open source and available under the MIT License.
-
-## Support
-
-For issues or questions:
-- Visit the [Lovable Documentation](https://docs.lovable.dev/)
-- Join the [Lovable Discord Community](https://discord.com/channels/1119885301872070706/1280461670979993613)
-
----
-
-**Built with ❤️ using [Lovable](https://lovable.dev/)**
