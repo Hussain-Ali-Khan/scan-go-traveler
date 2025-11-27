@@ -13,8 +13,8 @@ import { Card } from "@/components/ui/card";
 const formatDate = (dateValue: string | undefined): string => {
   if (!dateValue) return '';
   
-  // If it's already in DD-MM-YYYY format, return as is
-  if (/^\d{2}-\d{2}-\d{4}$/.test(dateValue)) {
+  // If it's already in DD/MM/YYYY format, return as is
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)) {
     return dateValue;
   }
   
@@ -24,11 +24,11 @@ const formatDate = (dateValue: string | undefined): string => {
     
     // Check if it's a valid date
     if (!isNaN(date.getTime())) {
-      // Format as DD-MM-YYYY
+      // Format as DD/MM/YYYY for Excel compatibility
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      return `${day}-${month}-${year}`;
+      return `${day}/${month}/${year}`;
     }
   } catch (e) {
     console.error('Date parsing error:', e);
