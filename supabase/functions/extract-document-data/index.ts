@@ -81,13 +81,19 @@ CRITICAL INSTRUCTIONS:
 - Flight tickets have passenger name, flight details, and travel dates
 - Look for airline logos and flight number patterns (e.g., AA123, BA456)
 - Departure and arrival information is usually prominent
+- Look for booking/confirmation codes, seat assignments, and meal preferences
 
 EXTRACT THE FOLLOWING:
 1. Passenger name: Full name as printed on ticket (usually in format: LASTNAME/FIRSTNAME)
 2. Flight number: Airline code + number (e.g., "AA 1234", "BA 456", "DL 789")
-3. Departure: City name or airport code of origin (e.g., "New York JFK", "London Heathrow", "LAX")
-4. Arrival: City name or airport code of destination (e.g., "Paris CDG", "Tokyo Narita", "SFO")
-5. Departure date: Format EXACTLY as DD-MMM-YYYY (e.g., 25-Dec-2024) - use 3-letter month abbreviations
+3. Booking reference: Also called PNR, confirmation code, or record locator (usually 6 alphanumeric characters, e.g., "ABC123")
+4. Ticket number: The e-ticket number (usually 13 digits, may start with airline code like "016-1234567890")
+5. Departure: City name or airport code of origin (e.g., "New York JFK", "London Heathrow", "LAX")
+6. Arrival: City name or airport code of final destination (e.g., "Paris CDG", "Tokyo Narita", "SFO")
+7. Transit stop: If flight has a layover/connection, extract the transit city and airport (e.g., "Dubai DXB", "Frankfurt FRA"). Leave empty if direct flight
+8. Seat number: The assigned seat (e.g., "12A", "24C", "3F")
+9. Inflight meal: Meal preference if shown (e.g., "Vegetarian", "Halal", "Hindu", "Kosher", "Regular", "VGML", "HNML")
+10. Departure date: Format EXACTLY as DD-MMM-YYYY (e.g., 25-Dec-2024) - use 3-letter month abbreviations
 
 HANDLING UNCLEAR DATA:
 - If passenger name has "/" separator, keep it as is
@@ -95,8 +101,9 @@ HANDLING UNCLEAR DATA:
 - For date, look for departure date specifically (not booking date or arrival date)
 - If text is unclear, make your best interpretation
 - DATE FORMAT MUST BE DD-MMM-YYYY with hyphens (e.g., 25-Dec-2024)
+- If a field is not visible or not applicable, use empty string ""
 
-Return ONLY a JSON object with these exact keys: name, flightNumber, departure, arrival, dateOfBirth (use departure date here). No additional text, explanations, or markdown.`;
+Return ONLY a JSON object with these exact keys: name, flightNumber, bookingReference, ticketNumber, departure, arrival, transitStop, seatNumber, inflightMeal, dateOfBirth (use departure date here). No additional text, explanations, or markdown.`;
     } else {
       prompt = `You are an expert OCR system. Analyze this document and identify what type it is.
 
@@ -107,7 +114,7 @@ STEPS:
 
 PASSPORT fields: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate
 VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType
-FLIGHT TICKET fields: name, flightNumber, departure, arrival, dateOfBirth (use departure date)
+FLIGHT TICKET fields: name, flightNumber, bookingReference, ticketNumber, departure, arrival, transitStop, seatNumber, inflightMeal, dateOfBirth (use departure date)
 
 FORMATTING:
 - All dates MUST be in DD-MMM-YYYY format with hyphens (e.g., 15-Mar-1990, 20-Dec-2030)
@@ -178,8 +185,13 @@ Return ONLY a JSON object with available data. No additional text, explanations,
       expiryDate: extractedData.expiryDate || "",
       visaType: extractedData.visaType || "",
       flightNumber: extractedData.flightNumber || "",
+      bookingReference: extractedData.bookingReference || "",
+      ticketNumber: extractedData.ticketNumber || "",
       departure: extractedData.departure || "",
       arrival: extractedData.arrival || "",
+      transitStop: extractedData.transitStop || "",
+      seatNumber: extractedData.seatNumber || "",
+      inflightMeal: extractedData.inflightMeal || "",
     };
 
     return new Response(JSON.stringify({ extractedData: completeData }), {
