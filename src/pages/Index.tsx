@@ -133,8 +133,13 @@ const Index = () => {
           expiryDate: existing.expiryDate || item.expiryDate,
           visaType: item.visaType || existing.visaType,
           flightNumber: item.flightNumber || existing.flightNumber,
+          bookingReference: item.bookingReference || existing.bookingReference,
+          ticketNumber: item.ticketNumber || existing.ticketNumber,
           departure: item.departure || existing.departure,
           arrival: item.arrival || existing.arrival,
+          transitStop: item.transitStop || existing.transitStop,
+          seatNumber: item.seatNumber || existing.seatNumber,
+          inflightMeal: item.inflightMeal || existing.inflightMeal,
         };
       } else {
         // New passenger
@@ -280,8 +285,13 @@ const Index = () => {
       "Passport Expiry Date",
       "Visa Type",
       "Flight Number",
+      "Booking Reference",
+      "Ticket Number",
       "Departure",
       "Arrival",
+      "Transit Stop",
+      "Seat Number",
+      "Inflight Meal",
     ];
 
     // Add BOM for UTF-8 encoding recognition by Excel
@@ -299,8 +309,13 @@ const Index = () => {
           escapeCsvDateValue(formatDate(row.expiryDate)),
           escapeCsvValue(row.visaType || ""),
           escapeCsvValue(row.flightNumber || ""),
+          escapeCsvValue(row.bookingReference || ""),
+          escapeCsvValue(row.ticketNumber || ""),
           escapeCsvValue(row.departure || ""),
           escapeCsvValue(row.arrival || ""),
+          escapeCsvValue(row.transitStop || ""),
+          escapeCsvValue(row.seatNumber || ""),
+          escapeCsvValue(row.inflightMeal || ""),
         ].join(",")
       ),
     ].join("\n");

@@ -48,8 +48,13 @@ export interface ExtractedData {
   expiryDate: string;
   visaType?: string;
   flightNumber?: string;
+  bookingReference?: string;
+  ticketNumber?: string;
   departure?: string;
   arrival?: string;
+  transitStop?: string;
+  seatNumber?: string;
+  inflightMeal?: string;
 }
 
 interface ExtractedDataTableProps {
@@ -101,8 +106,13 @@ export const ExtractedDataTable = ({
                 <TableHead>Passport Expiry Date</TableHead>
                 <TableHead>Visa Type</TableHead>
                 <TableHead>Flight Number</TableHead>
+                <TableHead>Booking Reference</TableHead>
+                <TableHead>Ticket Number</TableHead>
                 <TableHead>Departure</TableHead>
                 <TableHead>Arrival</TableHead>
+                <TableHead>Transit Stop</TableHead>
+                <TableHead>Seat Number</TableHead>
+                <TableHead>Inflight Meal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,8 +126,13 @@ export const ExtractedDataTable = ({
                   <TableCell>{formatDate(row.expiryDate)}</TableCell>
                   <TableCell>{row.visaType || "-"}</TableCell>
                   <TableCell>{row.flightNumber || "-"}</TableCell>
+                  <TableCell>{row.bookingReference || "-"}</TableCell>
+                  <TableCell>{row.ticketNumber || "-"}</TableCell>
                   <TableCell>{row.departure || "-"}</TableCell>
                   <TableCell>{row.arrival || "-"}</TableCell>
+                  <TableCell>{row.transitStop || "-"}</TableCell>
+                  <TableCell>{row.seatNumber || "-"}</TableCell>
+                  <TableCell>{row.inflightMeal || "-"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
