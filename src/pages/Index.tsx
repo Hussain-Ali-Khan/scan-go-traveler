@@ -72,12 +72,23 @@ const Index = () => {
       cleanName = parts[1] || parts[0]; // Use the part after "?" if it exists
     }
     
+    // Remove common honorifics/titles
+    const honorifics = ['mr', 'mrs', 'ms', 'miss', 'dr', 'prof', 'sir', 'madam'];
+    
     // Normalize: lowercase, remove extra spaces, remove special chars
-    return cleanName
+    let normalized = cleanName
       .toLowerCase()
       .replace(/[^a-z\s]/g, '') // Remove non-letter characters except spaces
       .replace(/\s+/g, ' ')      // Replace multiple spaces with single space
       .trim();
+    
+    // Remove honorifics from the beginning
+    const words = normalized.split(' ');
+    while (words.length > 0 && honorifics.includes(words[0])) {
+      words.shift();
+    }
+    
+    return words.join(' ');
   };
 
   const namesMatch = (name1: string, name2: string): boolean => {
