@@ -112,18 +112,25 @@ const Index = () => {
     dataArray.forEach(item => {
       // Try to find existing passenger by passport number (most reliable)
       let existingIndex = -1;
+      const itemPassport = item.passportNumber?.trim();
       
-      if (item.passportNumber?.trim()) {
+      if (itemPassport) {
         existingIndex = passengers.findIndex(p => 
-          p.passportNumber?.trim() === item.passportNumber?.trim()
+          p.passportNumber?.trim() === itemPassport
         );
       }
       
-      // If no passport match, try name matching
+      // If no passport match, try name matching - BUT only if current item has no passport number
+      // or if existing passenger has no passport number (prevents merging people with different passports)
       if (existingIndex === -1 && item.name?.trim()) {
-        existingIndex = passengers.findIndex(p => 
-          p.name && namesMatch(p.name, item.name)
-        );
+        existingIndex = passengers.findIndex(p => {
+          // If both have passport numbers and they're different, they're DEFINITELY different people
+          const existingPassport = p.passportNumber?.trim();
+          if (itemPassport && existingPassport && itemPassport !== existingPassport) {
+            return false; // Different passport numbers = different people
+          }
+          return p.name && namesMatch(p.name, item.name);
+        });
       }
       
       if (existingIndex !== -1) {
