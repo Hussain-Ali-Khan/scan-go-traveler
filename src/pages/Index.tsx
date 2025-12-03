@@ -193,8 +193,13 @@ const Index = () => {
         }
       }
 
+      // Debug: Log raw extracted data before consolidation
+      console.log("Raw extracted data from all documents:", JSON.stringify(newData, null, 2));
+      
       // Consolidate data by passenger
       const consolidatedData = consolidateData(newData);
+      
+      console.log("Consolidated data:", JSON.stringify(consolidatedData, null, 2));
       
       setExtractedData(consolidatedData);
       toast({
