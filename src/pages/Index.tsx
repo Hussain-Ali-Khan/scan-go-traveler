@@ -84,19 +84,25 @@ const Index = () => {
     const normalized1 = normalizeName(name1);
     const normalized2 = normalizeName(name2);
     
+    // Handle empty names
+    if (!normalized1 || !normalized2) return false;
+    
     // Exact match after normalization
     if (normalized1 === normalized2) return true;
     
-    // Check if one contains the other (handles middle names, etc.)
-    const words1 = normalized1.split(' ');
-    const words2 = normalized2.split(' ');
+    const words1 = normalized1.split(' ').filter(w => w.length > 0);
+    const words2 = normalized2.split(' ').filter(w => w.length > 0);
     
-    // Check if major name components overlap
-    const commonWords = words1.filter(word => 
-      words2.some(w => w === word || word.includes(w) || w.includes(word))
-    );
+    // Need at least one word in each name
+    if (words1.length === 0 || words2.length === 0) return false;
     
-    // If at least 2 name components match, consider it the same person
+    // CRITICAL: First names (first word) MUST match exactly
+    // This prevents family members like "Gaurang Desai" and "Rita Desai" from matching
+    if (words1[0] !== words2[0]) return false;
+    
+    // If first names match, check if at least 2 total words match (exact match only)
+    const commonWords = words1.filter(word => words2.includes(word));
+    
     return commonWords.length >= 2;
   };
 
