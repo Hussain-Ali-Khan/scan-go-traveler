@@ -25,10 +25,6 @@ An AI-powered document data extraction tool that automatically extracts and orga
 - **React Router** - Client-side routing
 - **Lucide React** - Beautiful icon library
 
-### Backend
-- **Lovable Cloud** - Full-stack backend platform
-- **Supabase Edge Functions** - Serverless functions powered by Deno
-- **Lovable AI Gateway** - AI model access (Google Gemini 2.5 Flash)
 
 ## Project Structure
 
