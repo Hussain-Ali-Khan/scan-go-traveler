@@ -61,60 +61,78 @@ const Index = () => {
     return filesByType.passport.length + filesByType.visa.length + filesByType.flight.length;
   };
 
-  const normalizeName = (name: string): string => {
-    if (!name) return '';
+  // Extract all possible name variants from a raw name (handles slash-separated names)
+  const extractNameVariants = (name: string): string[] => {
+    if (!name) return [];
     
-    // Handle flight ticket format: "LASTNAME?FIRSTNAME LASTNAME"
-    // Extract the part after the "?" if it exists
-    let cleanName = name;
-    if (name.includes('?')) {
-      const parts = name.split('?');
-      cleanName = parts[1] || parts[0]; // Use the part after "?" if it exists
-    }
-    
-    // Remove common honorifics/titles
+    const variants: string[] = [];
     const honorifics = ['mr', 'mrs', 'ms', 'miss', 'dr', 'prof', 'sir', 'madam'];
     
-    // Normalize: lowercase, remove extra spaces, remove special chars
-    let normalized = cleanName
-      .toLowerCase()
-      .replace(/[^a-z\s]/g, '') // Remove non-letter characters except spaces
-      .replace(/\s+/g, ' ')      // Replace multiple spaces with single space
-      .trim();
+    // Handle slash-separated names (e.g., "MASOODUL HASAN/TAZAIN FATIMA MRS")
+    const slashParts = name.split('/');
     
-    // Remove honorifics from the beginning
-    const words = normalized.split(' ');
-    while (words.length > 0 && honorifics.includes(words[0])) {
-      words.shift();
+    for (const part of slashParts) {
+      let cleanPart = part;
+      
+      // Handle "?" separator if present
+      if (cleanPart.includes('?')) {
+        const qParts = cleanPart.split('?');
+        cleanPart = qParts[1] || qParts[0];
+      }
+      
+      // Normalize: lowercase, remove non-letters except spaces
+      let normalized = cleanPart
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      // Remove honorifics from beginning and end
+      const words = normalized.split(' ').filter(w => w.length > 0 && !honorifics.includes(w));
+      
+      if (words.length >= 1) {
+        variants.push(words.join(' '));
+      }
     }
     
-    return words.join(' ');
+    return variants;
+  };
+
+  const normalizeName = (name: string): string => {
+    const variants = extractNameVariants(name);
+    return variants[0] || '';
   };
 
   const namesMatch = (name1: string, name2: string): boolean => {
-    const normalized1 = normalizeName(name1);
-    const normalized2 = normalizeName(name2);
+    const variants1 = extractNameVariants(name1);
+    const variants2 = extractNameVariants(name2);
     
     // Handle empty names
-    if (!normalized1 || !normalized2) return false;
+    if (variants1.length === 0 || variants2.length === 0) return false;
     
-    // Exact match after normalization
-    if (normalized1 === normalized2) return true;
+    // Check all combinations of variants
+    for (const v1 of variants1) {
+      for (const v2 of variants2) {
+        if (v1 === v2) return true;
+        
+        const words1 = v1.split(' ').filter(w => w.length > 0);
+        const words2 = v2.split(' ').filter(w => w.length > 0);
+        
+        if (words1.length < 2 || words2.length < 2) continue;
+        
+        // Check if same words in different order (e.g., "FATIMA ANEES" vs "ANEES FATIMA")
+        const sorted1 = [...words1].sort().join(' ');
+        const sorted2 = [...words2].sort().join(' ');
+        
+        if (sorted1 === sorted2) return true;
+        
+        // Check for significant overlap (at least 2 words must match)
+        const commonWords = words1.filter(word => words2.includes(word));
+        if (commonWords.length >= 2) return true;
+      }
+    }
     
-    const words1 = normalized1.split(' ').filter(w => w.length > 0);
-    const words2 = normalized2.split(' ').filter(w => w.length > 0);
-    
-    // Need at least one word in each name
-    if (words1.length === 0 || words2.length === 0) return false;
-    
-    // CRITICAL: First names (first word) MUST match exactly
-    // This prevents family members like "Gaurang Desai" and "Rita Desai" from matching
-    if (words1[0] !== words2[0]) return false;
-    
-    // If first names match, check if at least 2 total words match (exact match only)
-    const commonWords = words1.filter(word => words2.includes(word));
-    
-    return commonWords.length >= 2;
+    return false;
   };
 
   const consolidateData = (dataArray: ExtractedData[]): ExtractedData[] => {
