@@ -1,5 +1,3 @@
-import { getPromptForDocumentType } from "./prompts.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -7,6 +5,87 @@ const corsHeaders = {
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 2000;
+
+function getPromptForDocumentType(fileName: string): { documentType: string; prompt: string } {
+  const lowerFileName = fileName.toLowerCase();
+  let documentType = "Unknown";
+  let prompt = "";
+
+  if (lowerFileName.includes("passport")) {
+    documentType = "Passport";
+    prompt = `You are an expert OCR system specializing in passport document extraction. Analyze this passport image carefully.
+
+CRITICAL INSTRUCTIONS:
+- Look for the Machine Readable Zone (MRZ) at the bottom - it's the most reliable source
+- Cross-reference printed text with MRZ data for accuracy
+
+EXTRACT THE FOLLOWING:
+1. Full name: Extract surname and given names exactly as printed
+2. Passport number: Usually alphanumeric, 6-9 characters
+3. Date of birth: Format EXACTLY as DD-MMM-YYYY (e.g., 15-Mar-1990)
+4. Nationality: The country that issued the passport
+5. Issue date: Format EXACTLY as DD-MMM-YYYY
+6. Expiry date: Format EXACTLY as DD-MMM-YYYY
+
+HANDLING UNCLEAR DATA:
+- If a field is completely unreadable, use empty string ""
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens
+
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate. No additional text.`;
+  } else if (lowerFileName.includes("visa")) {
+    documentType = "Visa";
+    prompt = `You are an expert OCR system specializing in visa document extraction. Analyze this visa document carefully.
+
+EXTRACT THE FOLLOWING:
+1. Full name: Extract exactly as printed on the visa
+2. Passport number: May be printed on visa itself
+3. Date of birth: Format EXACTLY as DD-MMM-YYYY
+4. Nationality: Country of the passport holder
+5. Visa expiry date: Format EXACTLY as DD-MMM-YYYY
+6. Visa type: Category or type (e.g., "Tourist", "B1/B2", "Work")
+
+HANDLING UNCLEAR DATA:
+- If a field is not found, use empty string ""
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens
+
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType. No additional text.`;
+  } else if (lowerFileName.includes("flight") || lowerFileName.includes("ticket")) {
+    documentType = "Flight Ticket";
+    prompt = `You are an expert OCR system specializing in flight ticket and boarding pass extraction. Analyze this document carefully.
+
+EXTRACT THE FOLLOWING:
+1. Passenger name: Full name as printed on ticket
+2. Flight number: Airline code + number (e.g., "AA 1234")
+3. Booking reference: PNR or confirmation code (usually 6 alphanumeric characters)
+4. Ticket number: The e-ticket number
+5. Departure: City name or airport code of origin
+6. Arrival: City name or airport code of destination
+7. Transit stop: Layover city if any, empty if direct flight
+8. Seat number: The assigned seat
+9. Inflight meal: Meal preference if shown
+10. Departure date: Format EXACTLY as DD-MMM-YYYY
+
+HANDLING UNCLEAR DATA:
+- If a field is not visible, use empty string ""
+- DATE FORMAT MUST BE DD-MMM-YYYY with hyphens
+
+Return ONLY a JSON object with these exact keys: name, flightNumber, bookingReference, ticketNumber, departure, arrival, transitStop, seatNumber, inflightMeal, dateOfBirth (use departure date here). No additional text.`;
+  } else {
+    prompt = `You are an expert OCR system. Analyze this document and identify what type it is.
+
+Determine if this is a PASSPORT, VISA, or FLIGHT TICKET and extract all relevant information.
+
+PASSPORT fields: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate
+VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType
+FLIGHT TICKET fields: name, flightNumber, bookingReference, ticketNumber, departure, arrival, transitStop, seatNumber, inflightMeal, dateOfBirth
+
+All dates MUST be in DD-MMM-YYYY format. If a field is not found, use empty string "".
+
+Return ONLY a JSON object with available data. No additional text.`;
+  }
+
+  return { documentType, prompt };
+}
 
 async function callAIGateway(prompt: string, image: string, apiKey: string): Promise<Response> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -34,12 +113,11 @@ async function callAIGateway(prompt: string, image: string, apiKey: string): Pro
     });
 
     if (response.status === 402) {
-      // Payment required - no retry
       return response;
     }
 
     if (response.status === 429 && attempt < MAX_RETRIES) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s, 4s, 8s
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt);
       console.log(`Rate limited (429). Retry ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
       await new Promise(resolve => setTimeout(resolve, delay));
       continue;
@@ -48,7 +126,6 @@ async function callAIGateway(prompt: string, image: string, apiKey: string): Pro
     return response;
   }
 
-  // Should not reach here, but return last response
   throw new Error("Max retries exceeded");
 }
 
