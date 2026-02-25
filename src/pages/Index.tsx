@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { FileText } from "lucide-react";
 import { DocumentUpload, DocumentType } from "@/components/DocumentUpload";
 import { DocumentPreview } from "@/components/DocumentPreview";
 import { ExtractedDataTable, ExtractedData } from "@/components/ExtractedDataTable";
+import { ProcessingProgress, ProcessingSummary } from "@/components/ProcessingProgress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,13 @@ const Index = () => {
   });
   const [extractedData, setExtractedData] = useState<ExtractedData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0, fileName: "" });
+  const [processingErrors, setProcessingErrors] = useState<string[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [pauseReason, setPauseReason] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
+  const cancelRef = useRef(false);
   const { toast } = useToast();
 
   const handleFilesSelected = (type: DocumentType, newFiles: File[]) => {
@@ -192,6 +200,12 @@ const Index = () => {
     return passengers;
   };
 
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const handleCancel = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
+
   const handleProcess = async () => {
     const totalFiles = getTotalFiles();
     
@@ -205,53 +219,105 @@ const Index = () => {
     }
 
     setIsProcessing(true);
+    setShowSummary(false);
+    setProcessingErrors([]);
+    setSuccessCount(0);
+    cancelRef.current = false;
+    
     const newData: ExtractedData[] = [];
+    const errors: string[] = [];
+    let docIndex = 0;
 
-    try {
-      // Process all document types
-      for (const [type, files] of Object.entries(filesByType)) {
-        for (const file of files) {
-          const base64 = await fileToBase64(file);
-          
-          const { data, error } = await supabase.functions.invoke("extract-document-data", {
-            body: { 
-              image: base64, 
-              fileName: `${type}-${file.name}`,
-              documentType: type
-            },
-          });
+    // Build flat list of all files with their types
+    const allFiles: { type: string; file: File }[] = [];
+    for (const [type, files] of Object.entries(filesByType)) {
+      for (const file of files) {
+        allFiles.push({ type, file });
+      }
+    }
 
-          if (error) throw error;
+    setProcessingProgress({ current: 0, total: allFiles.length, fileName: "" });
 
-          if (data?.extractedData) {
-            newData.push(data.extractedData);
-          }
-        }
+    for (let i = 0; i < allFiles.length; i++) {
+      if (cancelRef.current) {
+        errors.push("Processing cancelled by user");
+        break;
       }
 
-      // Debug: Log raw extracted data before consolidation
-      console.log("Raw extracted data from all documents:", JSON.stringify(newData, null, 2));
-      
-      // Consolidate data by passenger
-      const consolidatedData = consolidateData(newData);
-      
-      console.log("Consolidated data:", JSON.stringify(consolidatedData, null, 2));
-      
-      setExtractedData(consolidatedData);
-      toast({
-        title: "Processing complete",
-        description: `Extracted data for ${consolidatedData.length} passenger(s)`,
-      });
-    } catch (error: any) {
-      console.error("Processing error:", error);
-      toast({
-        title: "Processing failed",
-        description: error.message || "Failed to process documents",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
+      const { type, file } = allFiles[i];
+      setProcessingProgress({ current: i, total: allFiles.length, fileName: `${type}: ${file.name}` });
+
+      try {
+        const base64 = await fileToBase64(file);
+        
+        const response = await supabase.functions.invoke("extract-document-data", {
+          body: { 
+            image: base64, 
+            fileName: `${type}-${file.name}`,
+            documentType: type
+          },
+        });
+
+        // Check for rate limit / payment errors
+        if (response.error) {
+          const status = (response.error as any)?.status;
+          const errorBody = response.data;
+          
+          if (status === 429 || errorBody?.code === "RATE_LIMITED") {
+            // Pause and retry
+            setIsPaused(true);
+            setPauseReason("Rate limited. Waiting 5 seconds before retrying...");
+            await delay(5000);
+            setIsPaused(false);
+            setPauseReason("");
+            i--; // Retry this document
+            continue;
+          }
+          
+          if (status === 402 || errorBody?.code === "PAYMENT_REQUIRED") {
+            errors.push("AI credits exhausted. Processing stopped.");
+            toast({
+              title: "Credits exhausted",
+              description: "Please add AI credits to your workspace to continue processing.",
+              variant: "destructive",
+            });
+            break;
+          }
+          
+          // Other error - skip and continue
+          errors.push(`${file.name}: ${response.error.message || "Unknown error"}`);
+          continue;
+        }
+
+        if (response.data?.extractedData) {
+          newData.push(response.data.extractedData);
+        }
+      } catch (error: any) {
+        console.error(`Error processing ${file.name}:`, error);
+        errors.push(`${file.name}: ${error.message || "Processing failed"}`);
+      }
+
+      // Throttle: 500ms delay between requests
+      if (i < allFiles.length - 1 && !cancelRef.current) {
+        await delay(500);
+      }
     }
+
+    console.log("Raw extracted data:", JSON.stringify(newData, null, 2));
+    
+    const consolidatedData = consolidateData(newData);
+    console.log("Consolidated data:", JSON.stringify(consolidatedData, null, 2));
+    
+    setExtractedData(consolidatedData);
+    setSuccessCount(newData.length);
+    setProcessingErrors(errors);
+    setShowSummary(errors.length > 0);
+    setIsProcessing(false);
+
+    toast({
+      title: "Processing complete",
+      description: `Extracted data for ${consolidatedData.length} passenger(s)${errors.length > 0 ? ` (${errors.length} error${errors.length > 1 ? 's' : ''})` : ''}`,
+    });
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -456,6 +522,26 @@ const Index = () => {
               />
             </div>
           </div>
+
+          {isProcessing && (
+            <ProcessingProgress
+              current={processingProgress.current}
+              total={processingProgress.total}
+              currentFileName={processingProgress.fileName}
+              errors={processingErrors}
+              onCancel={handleCancel}
+              isPaused={isPaused}
+              pauseReason={pauseReason}
+            />
+          )}
+
+          {showSummary && !isProcessing && (
+            <ProcessingSummary
+              total={processingProgress.total}
+              successful={successCount}
+              errors={processingErrors}
+            />
+          )}
 
           {totalFiles > 0 && extractedData.length === 0 && !isProcessing && (
             <div className="flex justify-center">
