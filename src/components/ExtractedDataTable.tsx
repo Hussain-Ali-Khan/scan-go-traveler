@@ -47,6 +47,7 @@ export interface ExtractedData {
   passportIssueDate?: string;
   expiryDate: string;
   visaType?: string;
+  visaExpiryDate?: string;
   flightNumber?: string;
   bookingReference?: string;
   ticketNumber?: string;
@@ -105,6 +106,7 @@ export const ExtractedDataTable = ({
                 <TableHead>Passport Issue Date</TableHead>
                 <TableHead>Passport Expiry Date</TableHead>
                 <TableHead>Visa Type</TableHead>
+                <TableHead>Visa Expiry Date</TableHead>
                 <TableHead>Flight Number</TableHead>
                 <TableHead>Booking Reference</TableHead>
                 <TableHead>Ticket Number</TableHead>
@@ -125,6 +127,7 @@ export const ExtractedDataTable = ({
                   <TableCell>{formatDate(row.passportIssueDate) || "-"}</TableCell>
                   <TableCell>{formatDate(row.expiryDate)}</TableCell>
                   <TableCell>{row.visaType || "-"}</TableCell>
+                  <TableCell>{formatDate(row.visaExpiryDate) || "-"}</TableCell>
                   <TableCell>{row.flightNumber || "-"}</TableCell>
                   <TableCell>{row.bookingReference || "-"}</TableCell>
                   <TableCell>{row.ticketNumber || "-"}</TableCell>
