@@ -48,7 +48,7 @@ HANDLING UNCLEAR DATA:
 - If a field is not found, use empty string ""
 - DATE FORMAT MUST BE DD-MMM-YYYY with hyphens
 
-Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType. No additional text.`;
+Return ONLY a JSON object with these exact keys: name, passportNumber, dateOfBirth, nationality, visaExpiryDate, visaType. No additional text.`;
   } else if (lowerFileName.includes("flight") || lowerFileName.includes("ticket")) {
     documentType = "Flight Ticket";
     prompt = `You are an expert OCR system specializing in flight ticket and boarding pass extraction. Analyze this document carefully.
@@ -76,7 +76,7 @@ Return ONLY a JSON object with these exact keys: name, flightNumber, bookingRefe
 Determine if this is a PASSPORT, VISA, or FLIGHT TICKET and extract all relevant information.
 
 PASSPORT fields: name, passportNumber, dateOfBirth, nationality, passportIssueDate, expiryDate
-VISA fields: name, passportNumber, dateOfBirth, nationality, expiryDate, visaType
+VISA fields: name, passportNumber, dateOfBirth, nationality, visaExpiryDate, visaType
 FLIGHT TICKET fields: name, flightNumber, bookingReference, ticketNumber, departure, arrival, transitStop, seatNumber, inflightMeal, dateOfBirth
 
 All dates MUST be in DD-MMM-YYYY format. If a field is not found, use empty string "".
@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
       passportIssueDate: extractedData.passportIssueDate || "",
       expiryDate: extractedData.expiryDate || "",
       visaType: extractedData.visaType || "",
+      visaExpiryDate: extractedData.visaExpiryDate || "",
       flightNumber: extractedData.flightNumber || "",
       bookingReference: extractedData.bookingReference || "",
       ticketNumber: extractedData.ticketNumber || "",
