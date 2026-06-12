@@ -87,39 +87,32 @@ Return ONLY a JSON object with available data. No additional text.`;
   return { documentType, prompt };
 }
 
-async function callAIGateway(prompt: string, image: string, apiKey: string): Promise<Response> {
+async function callGemini(prompt: string, image: string, apiKey: string): Promise<Response> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
+        contents: [
           {
             role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "image_url",
-                image_url: { url: `data:image/jpeg;base64,${image}` },
-              },
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: "image/jpeg", data: image } },
             ],
           },
         ],
+        generationConfig: { responseMimeType: "application/json" },
       }),
     });
 
-    if (response.status === 402) {
-      return response;
-    }
+    if (response.status === 402) return response;
 
     if (response.status === 429 && attempt < MAX_RETRIES) {
       const delay = BASE_DELAY_MS * Math.pow(2, attempt);
       console.log(`Rate limited (429). Retry ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
     }
 
@@ -141,14 +134,14 @@ Deno.serve(async (req) => {
       throw new Error("No image data provided");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY not configured");
     }
 
     const { documentType, prompt } = getPromptForDocumentType(fileName);
 
-    const response = await callAIGateway(prompt, image, LOVABLE_API_KEY);
+    const response = await callGemini(prompt, image, GEMINI_API_KEY);
 
     if (response.status === 429) {
       return new Response(
@@ -159,19 +152,19 @@ Deno.serve(async (req) => {
 
     if (response.status === 402) {
       return new Response(
-        JSON.stringify({ error: "AI credits exhausted. Please add credits to continue.", code: "PAYMENT_REQUIRED" }),
+        JSON.stringify({ error: "Quota exhausted on your Gemini API key.", code: "PAYMENT_REQUIRED" }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("Gemini API error:", response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
       throw new Error("No response from AI");
@@ -185,6 +178,7 @@ Deno.serve(async (req) => {
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse extracted data");
     }
+
 
     extractedData.documentType = documentType;
 
